@@ -1,0 +1,22 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: bitacoratech-sqlserver-local
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-Change_this_password_123!}
+      MSSQL_PID: Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-local-data:/var/opt/mssql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pidof sqlservr >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 45s
+
+volumes:
+  sqlserver-local-data:

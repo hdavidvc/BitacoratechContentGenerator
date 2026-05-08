@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\BitacoraTech.Domain\BitacoraTech.Domain.csproj" />
+    <ProjectReference Include="..\..\src\BitacoraTech.Application\BitacoraTech.Application.csproj" />
+    <ProjectReference Include="..\..\src\BitacoraTech.Infrastructure\BitacoraTech.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\BitacoraTech.Api\BitacoraTech.Api.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

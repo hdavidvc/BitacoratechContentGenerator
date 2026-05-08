@@ -67,6 +67,22 @@ public sealed record ScoredKeywordCandidate(
     string Intent,
     DateTimeOffset SeenAt);
 
+public sealed record WordPressPublishRequest(
+    WordPressPublicationMode Mode,
+    DateTimeOffset? ScheduledFor,
+    IReadOnlyCollection<string> Categories,
+    IReadOnlyCollection<string> Tags,
+    string? FeaturedImageUrl,
+    string? FeaturedImageAltText,
+    string? Slug,
+    string? Excerpt);
+
+public sealed record WordPressPublishResult(
+    string PostId,
+    string Status,
+    string? Link,
+    int? FeaturedMediaId);
+
 public sealed record KeywordResearchResult(Guid ResearchRunId, IReadOnlyCollection<ScoredKeywordCandidate> Keywords);
 
 public interface IKeywordTrendSource
@@ -133,7 +149,7 @@ public interface IPromptTemplateService
 
 public interface IWordPressPublishingService
 {
-    Task<string> PublishAsync(Article article, Site site, CancellationToken cancellationToken);
+    Task<WordPressPublishResult> PublishAsync(Article article, Site site, WordPressPublishRequest request, CancellationToken cancellationToken);
 }
 
 public interface IMediaService
@@ -150,7 +166,7 @@ public interface IJobScheduler
 public interface IArticleWorkflowService
 {
     Task<ArticleDetailResponse> ApproveAsync(Guid articleId, Guid approvedByUserId, CancellationToken cancellationToken);
-    Task<JobResponse> PublishAsync(Guid articleId, Guid siteId, CancellationToken cancellationToken);
+    Task<JobResponse> PublishAsync(Guid articleId, PublishArticleRequest request, CancellationToken cancellationToken);
 }
 
 public interface ISiteService

@@ -1,4 +1,5 @@
-import { computed, signal } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
+import { AuthResponse } from '../../models/api.models';
 
 const storageKey = 'bitacoratech.auth';
 
@@ -13,38 +14,55 @@ export interface AuthSession {
   roles: string[];
 }
 
-const readSession = (): AuthSession | null => {
-  const raw = localStorage.getItem(storageKey);
-  if (!raw) {
-    return null;
+@Injectable({ providedIn: 'root' })
+export class AuthStore {
+  private readonly sessionState = signal<AuthSession | null>(this.readSession());
+  readonly session = this.sessionState.asReadonly();
+  readonly accessToken = computed(() => this.sessionState()?.accessToken ?? null);
+  readonly email = computed(() => this.sessionState()?.email ?? 'guest@bitacora.tech');
+  readonly roles = computed(() => this.sessionState()?.roles ?? []);
+  readonly isAuthenticated = computed(() => {
+    const session = this.sessionState();
+    return !!session?.accessToken && new Date(session.accessTokenExpiresAt).getTime() > Date.now();
+  });
+
+  setSession(response: AuthResponse) {
+    const session: AuthSession = {
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+      accessTokenExpiresAt: response.accessTokenExpiresAt,
+      refreshTokenExpiresAt: response.refreshTokenExpiresAt,
+      userId: response.userId,
+      tenantId: response.tenantId,
+      email: response.email,
+      roles: response.roles
+    };
+
+    localStorage.setItem(storageKey, JSON.stringify(session));
+    this.sessionState.set(session);
   }
 
-  try {
-    return JSON.parse(raw) as AuthSession;
-  } catch {
+  clear() {
     localStorage.removeItem(storageKey);
-    return null;
+    this.sessionState.set(null);
   }
-};
 
-export const authSession = signal<AuthSession | null>(readSession());
-export const accessToken = computed(() => authSession()?.accessToken ?? null);
-export const isAuthenticated = computed(() => {
-  const session = authSession();
-  return !!session?.accessToken && new Date(session.accessTokenExpiresAt).getTime() > Date.now();
-});
+  hasAnyRole(roles: string[]) {
+    const sessionRoles = this.roles();
+    return roles.length === 0 || roles.some((role) => sessionRoles.includes(role));
+  }
 
-export const setAuthSession = (session: AuthSession) => {
-  localStorage.setItem(storageKey, JSON.stringify(session));
-  authSession.set(session);
-};
+  private readSession(): AuthSession | null {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) {
+      return null;
+    }
 
-export const clearAuthSession = () => {
-  localStorage.removeItem(storageKey);
-  authSession.set(null);
-};
-
-export const hasAnyRole = (roles: string[]) => {
-  const sessionRoles = authSession()?.roles ?? [];
-  return roles.length === 0 || roles.some((role) => sessionRoles.includes(role));
-};
+    try {
+      return JSON.parse(raw) as AuthSession;
+    } catch {
+      localStorage.removeItem(storageKey);
+      return null;
+    }
+  }
+}

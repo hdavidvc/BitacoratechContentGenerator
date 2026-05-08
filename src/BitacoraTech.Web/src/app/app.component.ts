@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ThemeStore } from './core/theme/theme.store';
 
 @Component({
   selector: 'app-root',
@@ -7,5 +8,10 @@ import { RouterOutlet } from '@angular/router';
   imports: [RouterOutlet],
   template: '<router-outlet />'
 })
-export class AppComponent {}
+export class AppComponent {
+  private readonly themeStore = inject(ThemeStore);
 
+  constructor() {
+    this.themeStore.init();
+  }
+}

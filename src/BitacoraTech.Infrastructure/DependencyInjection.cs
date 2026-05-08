@@ -31,6 +31,15 @@ public static class DependencyInjection
         services.Configure<AdminSeedOptions>(configuration.GetSection(AdminSeedOptions.SectionName));
         services.Configure<AiOptions>(configuration.GetSection(AiOptions.SectionName));
         services.Configure<KeywordResearchOptions>(configuration.GetSection(KeywordResearchOptions.SectionName));
+        services.Configure<WordPressSecurityOptions>(configuration.GetSection(WordPressSecurityOptions.SectionName));
+        services.Configure<WordPressSecurityOptions>(options =>
+        {
+            var encryptionKey = configuration["WORDPRESS_ENCRYPTION_KEY"];
+            if (!string.IsNullOrWhiteSpace(encryptionKey))
+            {
+                options.EncryptionKey = encryptionKey;
+            }
+        });
         services.Configure<AiOptions>(options =>
         {
             ApplyApiKey(options, "Gemini", configuration["GEMINI_API_KEY"]);
@@ -78,8 +87,9 @@ public static class DependencyInjection
         services.AddScoped<IDatabaseInitializer, DatabaseInitializer>();
         services.AddSingleton<IJobScheduler, HangfireSqlJobScheduler>();
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+        services.AddSingleton<ISecretProtector, AesSecretProtector>();
         services.AddSingleton<IPromptTemplateService, PromptTemplateService>();
-        services.AddSingleton<IWordPressPublishingService, WordPressRestPublishingService>();
+        services.AddScoped<IWordPressPublishingService, WordPressRestPublishingService>();
         services.AddSingleton<IMediaService, LocalMediaService>();
         return services;
     }

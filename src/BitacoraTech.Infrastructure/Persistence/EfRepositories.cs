@@ -8,16 +8,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BitacoraTech.Infrastructure.Persistence;
 
-public sealed class EfArticleRepository(BitacoraTechDbContext dbContext) : IArticleRepository
+public sealed class EfArticleRepository(BitacoraTechDbContext dbContext, ICurrentUserContext currentUser) : IArticleRepository
 {
     public async Task<IReadOnlyCollection<Article>> ListAsync(CancellationToken cancellationToken)
     {
-        return await dbContext.Articles.AsNoTracking().OrderByDescending(x => x.CreatedAt).ToListAsync(cancellationToken);
+        return await Query()
+            .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
     }
 
     public Task<Article?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
-        return dbContext.Articles
+        return Query()
             .Include(x => x.Approval)
             .Include(x => x.SeoAnalyses)
             .Include(x => x.Images)
@@ -29,24 +32,40 @@ public sealed class EfArticleRepository(BitacoraTechDbContext dbContext) : IArti
     {
         await dbContext.Articles.AddAsync(article, cancellationToken);
     }
+
+    private IQueryable<Article> Query()
+    {
+        var tenantId = currentUser.TenantId;
+        return tenantId is null ? dbContext.Articles : dbContext.Articles.Where(x => x.TenantId == tenantId.Value);
+    }
 }
 
-public sealed class EfKeywordRepository(BitacoraTechDbContext dbContext) : IKeywordRepository
+public sealed class EfKeywordRepository(BitacoraTechDbContext dbContext, ICurrentUserContext currentUser) : IKeywordRepository
 {
     public async Task<IReadOnlyCollection<Keyword>> ListAsync(CancellationToken cancellationToken)
     {
-        return await dbContext.Keywords.AsNoTracking().OrderByDescending(x => x.OpportunityScore).ThenByDescending(x => x.SearchVolume).ToListAsync(cancellationToken);
+        return await Query()
+            .AsNoTracking()
+            .OrderByDescending(x => x.OpportunityScore)
+            .ThenByDescending(x => x.SearchVolume)
+            .ToListAsync(cancellationToken);
     }
 
     public Task<Keyword?> GetBySiteAndTextAsync(Guid siteId, string text, CancellationToken cancellationToken)
     {
         var normalizedText = text.Trim();
-        return dbContext.Keywords.FirstOrDefaultAsync(x => x.SiteId == siteId && x.Text == normalizedText, cancellationToken);
+        return Query().FirstOrDefaultAsync(x => x.SiteId == siteId && x.Text == normalizedText, cancellationToken);
     }
 
     public async Task AddAsync(Keyword keyword, CancellationToken cancellationToken)
     {
         await dbContext.Keywords.AddAsync(keyword, cancellationToken);
+    }
+
+    private IQueryable<Keyword> Query()
+    {
+        var tenantId = currentUser.TenantId;
+        return tenantId is null ? dbContext.Keywords : dbContext.Keywords.Where(x => x.TenantId == tenantId.Value);
     }
 }
 
@@ -58,21 +77,33 @@ public sealed class EfKeywordResearchRunRepository(BitacoraTechDbContext dbConte
     }
 }
 
-public sealed class EfSiteRepository(BitacoraTechDbContext dbContext) : ISiteRepository
+public sealed class EfSiteRepository(BitacoraTechDbContext dbContext, ICurrentUserContext currentUser) : ISiteRepository
 {
     public async Task<IReadOnlyCollection<Site>> ListAsync(CancellationToken cancellationToken)
     {
-        return await dbContext.Sites.Include(x => x.WordPressConnection).AsNoTracking().OrderBy(x => x.Name).ToListAsync(cancellationToken);
+        return await Query()
+            .Include(x => x.WordPressConnection)
+            .AsNoTracking()
+            .OrderBy(x => x.Name)
+            .ToListAsync(cancellationToken);
     }
 
     public Task<Site?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
-        return dbContext.Sites.Include(x => x.WordPressConnection).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return Query()
+            .Include(x => x.WordPressConnection)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
     public async Task AddAsync(Site site, CancellationToken cancellationToken)
     {
         await dbContext.Sites.AddAsync(site, cancellationToken);
+    }
+
+    private IQueryable<Site> Query()
+    {
+        var tenantId = currentUser.TenantId;
+        return tenantId is null ? dbContext.Sites : dbContext.Sites.Where(x => x.TenantId == tenantId.Value);
     }
 }
 

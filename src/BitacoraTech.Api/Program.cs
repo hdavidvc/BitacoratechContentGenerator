@@ -15,6 +15,7 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+SecurityConfigurationValidator.Validate(builder.Configuration, builder.Environment);
 
 builder.Host.UseSerilog((context, services, loggerConfiguration) =>
     loggerConfiguration.ReadFrom.Configuration(context.Configuration).ReadFrom.Services(services));
@@ -134,7 +135,7 @@ api.MapPost("/articles/{id:guid}/approve", (Guid id, ApproveArticleRequest reque
     workflow.ApproveAsync(id, request.ApprovedByUserId, cancellationToken)).RequireAuthorization("Editors");
 
 api.MapPost("/articles/{id:guid}/publish", (Guid id, PublishArticleRequest request, IArticleWorkflowService workflow, CancellationToken cancellationToken) =>
-    workflow.PublishAsync(id, request.SiteId, cancellationToken)).RequireAuthorization("Editors");
+    workflow.PublishAsync(id, request, cancellationToken)).RequireAuthorization("Editors");
 
 api.MapGet("/keywords", (IKeywordResearchService keywords, CancellationToken cancellationToken) =>
     keywords.GetKeywordsAsync(cancellationToken));

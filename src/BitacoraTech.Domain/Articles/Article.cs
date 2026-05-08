@@ -54,6 +54,13 @@ public sealed class Article : Entity
         Touch();
     }
 
+    public void MarkGenerationFailed()
+    {
+        EnsureStatus(ArticleStatus.Generating);
+        Status = ArticleStatus.GenerationFailed;
+        Touch();
+    }
+
     public void CompleteGeneration(string title, string htmlContent)
     {
         EnsureStatus(ArticleStatus.Generating, ArticleStatus.Draft);
@@ -63,10 +70,24 @@ public sealed class Article : Entity
         Touch();
     }
 
+    public void MarkSeoAnalyzing()
+    {
+        EnsureStatus(ArticleStatus.Generated, ArticleStatus.SeoFailed);
+        Status = ArticleStatus.SeoAnalyzing;
+        Touch();
+    }
+
     public void MarkReadyForReview(int seoScore)
     {
         SeoScore = seoScore;
         Status = ArticleStatus.ReadyForReview;
+        Touch();
+    }
+
+    public void MarkSeoFailed()
+    {
+        EnsureStatus(ArticleStatus.SeoAnalyzing, ArticleStatus.Generated);
+        Status = ArticleStatus.SeoFailed;
         Touch();
     }
 
@@ -122,6 +143,22 @@ public sealed class Article : Entity
 
         _seoAnalyses.Add(analysis);
         SeoScore = analysis.Score;
+        Touch();
+    }
+
+    public void AddImage(ArticleImage image)
+    {
+        if (image.ArticleId != Id)
+        {
+            throw new InvalidOperationException("Article image belongs to another article.");
+        }
+
+        if (_images.Any(existing => string.Equals(existing.Url, image.Url, StringComparison.OrdinalIgnoreCase)))
+        {
+            return;
+        }
+
+        _images.Add(image);
         Touch();
     }
 
